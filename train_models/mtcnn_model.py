@@ -234,7 +234,7 @@ def P_Net(
                 landmark_pred, landmark_target, label)
 
             accuracy = cal_accuracy(cls_prob, label)
-            L2_loss = tf.add_n(slim.losses.get_regularization_losses())
+            L2_loss = tf.add_n(tf.losses.get_regularization_losses())
             return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
         # test
         else:
@@ -311,7 +311,7 @@ def R_Net(
             accuracy = cal_accuracy(cls_prob, label)
             landmark_loss = landmark_ohem(
                 landmark_pred, landmark_target, label)
-            L2_loss = tf.add_n(slim.losses.get_regularization_losses())
+            L2_loss = tf.add_n(tf.losses.get_regularization_losses())
             return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
         else:
             return cls_prob, bbox_pred, landmark_pred
