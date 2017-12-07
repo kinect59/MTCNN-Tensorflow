@@ -122,7 +122,7 @@ def save_hard_example(net, data,save_path):
     pos_file.close()
 
 
-def t_net(prefix, epoch,
+def t_net(prefix, epoch, data_dir,
              batch_size, test_mode="PNet",
              thresh=[0.6, 0.6, 0.7], min_face_size=25,
              stride=2, slide_window=False, shuffle=False, vis=False):
@@ -237,6 +237,7 @@ if __name__ == '__main__':
 
     t_net(args.prefix,#model param's file
           args.epoch, #final epoches
+          data_dir,
           args.batch_size, #test batch_size 
           args.test_mode,#test which model
           args.thresh, #cls threshold
