@@ -188,14 +188,26 @@ def train(net_factory, prefix, end_epoch, base_dir,
             print bbox_batch_array[0]
             print landmark_batch_array[0]
             '''
-            _,_,summary = sess.run([train_op, lr_op ,summary_op], feed_dict={input_image: image_batch_array, label: label_batch_array, bbox_target: bbox_batch_array,landmark_target:landmark_batch_array})
-            
+
+            sess_input = [train_op, lr_op, summary_op,
+                          cls_loss_op, bbox_loss_op, landmark_loss_op,
+                          L2_loss_op, accuracy_op]
+            sess_feed_dict = {input_image: image_batch_array,
+                              label: label_batch_array,
+                              bbox_target: bbox_batch_array,
+                              landmark_target:landmark_batch_array}
+            sess_output = sess.run(sess_input, feed_dict=sess_feed_dict)
+            lr = sess_output[1]
+            summary = sess_output[2]
+            cls_loss = sess_output[3]
+            bbox_loss = sess_output[4]
+            landmark_loss = sess_output[5]
+            L2_loss = sess_output[6]
+            acc = sess_output[7]
+
+
             if (step+1) % display == 0:
-                #acc = accuracy(cls_pred, labels_batch)
-                cls_loss, bbox_loss,landmark_loss,L2_loss,lr,acc = sess.run([cls_loss_op, bbox_loss_op,landmark_loss_op,L2_loss_op,lr_op,accuracy_op],
-                                                             feed_dict={input_image: image_batch_array, label: label_batch_array, bbox_target: bbox_batch_array, landmark_target: landmark_batch_array})                
-                print("%s : Step: %d, accuracy: %3f, cls loss: %4f, bbox loss: %4f, landmark loss: %4f,L2 loss: %4f,lr:%f " % (
-                datetime.now(), step+1, acc, cls_loss, bbox_loss, landmark_loss, L2_loss, lr))
+                print("%s : Step: %d, accuracy: %3f, cls loss: %4f, bbox loss: %4f, landmark loss: %4f,L2 loss: %4f,lr:%f " % (datetime.now(), step+1, acc, cls_loss, bbox_loss, landmark_loss, L2_loss, lr))
             #save every two epochs
             if i * config.BATCH_SIZE > num*2:
                 epoch = epoch + 1
