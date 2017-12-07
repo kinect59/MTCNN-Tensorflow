@@ -34,8 +34,12 @@ def train_model(base_lr, loss, data_num):
                  for x in range(0, len(config.LR_EPOCH) + 1)]
     # control learning rate
     lr_op = tf.train.piecewise_constant(global_step, boundaries, lr_values)
-    optimizer = tf.train.MomentumOptimizer(lr_op, 0.9)
-    train_op = optimizer.minimize(loss, global_step)
+
+    # Ensures that we execute update_ops before train step
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        optimizer = tf.train.MomentumOptimizer(lr_op, 0.9)
+        train_op = optimizer.minimize(loss, global_step)
 
     return train_op, lr_op
 
