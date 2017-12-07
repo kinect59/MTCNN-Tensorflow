@@ -40,7 +40,7 @@ def IoU(box, boxes):
     inter = w * h
     ovr = inter*1.0 / (box_area + area - inter)
     return ovr
-def GenerateData(ftxt, output,net,argument=False):
+def GenerateData(ftxt, output, dstdir, net, argument=False):
     if net == "PNet":
         size = 12
     elif net == "RNet":
@@ -52,8 +52,7 @@ def GenerateData(ftxt, output,net,argument=False):
         return
     image_id = 0
     f = open(join(OUTPUT,"landmark_%s_aug.txt" %(size)),'w')
-    #dstdir = "train_landmark_few"
-   
+
     data = getDataFromTxt(ftxt)
     idx = 0
     #image_path bbox landmark(5*2)
@@ -192,10 +191,10 @@ if __name__ == '__main__':
         raise Exception("Invalid argument: {}".format(args.net))
 
     OUTPUT = str(imsize)
-    if not exists(dstdir): os.mkdir(dstdir)
-
-    dstdir = "{}/train_{}_landmark_aug".format(imsize, args.net)
     if not exists(OUTPUT): os.mkdir(OUTPUT)
 
+    dstdir = "{}/train_{}_landmark_aug".format(imsize, args.net)
+    if not exists(dstdir): os.mkdir(dstdir)
+
     train_txt = "trainImageList.txt"
-    imgs,landmarks = GenerateData(train_txt, OUTPUT, args.net, argument=True)
+    imgs,landmarks = GenerateData(train_txt, OUTPUT, dstdir, args.net, argument=True)
