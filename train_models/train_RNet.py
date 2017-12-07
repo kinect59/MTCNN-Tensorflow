@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 from mtcnn_model import R_Net
 from train import train
 
@@ -14,7 +14,14 @@ def train_RNet(base_dir, prefix, end_epoch, display, lr):
     :return:
     """
     net_factory = R_Net
-    train(net_factory, prefix, end_epoch, base_dir, display=display, base_lr=lr)
+    train(
+        net_factory,
+        prefix,
+        end_epoch,
+        base_dir,
+        display=display,
+        base_lr=lr)
+
 
 if __name__ == '__main__':
     base_dir = '../prepare_data/imglists/RNet'
