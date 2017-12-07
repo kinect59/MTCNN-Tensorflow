@@ -186,7 +186,7 @@ def t_net(prefix, epoch,
 def parse_args():
     parser = argparse.ArgumentParser(description='Test mtcnn',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--test_mode', dest='test_mode', help='test net type, can be pnet, rnet or onet',
+    parser.add_argument('--test_mode', dest='test_mode', help='test net type, can be pnet rnet',
                         default='RNet', type=str)
     parser.add_argument('--prefix', dest='prefix', help='prefix of model name', nargs="+",
                         default=['../data/MTCNN_model/PNet_landmark/PNet', '../data/MTCNN_model/RNet_landmark/RNet', '../data/MTCNN_model/ONet/ONet'],
@@ -212,27 +212,29 @@ def parse_args():
 
 if __name__ == '__main__':
 
-    net = 'ONet'
-    if net == "RNet":
+    args = parse_args()
+    print 'Called with argument:'
+    print args
+
+    if args.test_mode == "PNet":
         image_size = 24
-    if net == "ONet":
+    elif args.test_mode == "RNet":
         image_size = 48
+    else:
+        raise Exception("Invalid test_mode: {}".format(args.test_mode))
 
     base_dir = '../prepare_data/WIDER_train'
     data_dir = '%s' % str(image_size)
-    
+
     neg_dir = get_path(data_dir, 'negative')
     pos_dir = get_path(data_dir, 'positive')
     part_dir = get_path(data_dir, 'part')
-    #create dictionary shuffle   
+
+    #create dictionary shuffle
     for dir_path in [neg_dir, pos_dir, part_dir]:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-    args = parse_args()
-
-    print 'Called with argument:'
-    print args 
     t_net(args.prefix,#model param's file
           args.epoch, #final epoches
           args.batch_size, #test batch_size 
