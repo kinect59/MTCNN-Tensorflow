@@ -17,14 +17,17 @@ This work is used for reproduce MTCNN, a Joint Face Detection and Alignment usin
 4. Run `gen_landmark_data.py PNet` to generate training data(Face Landmark Detection Part) for **PNet**.
 5. Run `gen_imglist.py PNet` to merge two parts of training data.
 6. Run `gen_tfrecords.py PNet` to generate tfrecord for **PNet**.
-7. After training **PNet**, run `gen_hard_example.py --test_mode PNet` to generate training data(Face Detection Part) for **RNet**.
-8. Run `gen_landmark_data.py RNet` to generate training data(Face Landmark Detection Part) for **RNet**.
-9. Run `gen_imglist.py PNet` to merge two parts of training data.
-10. Run `gen_tfrecords.py RNet` to generate tfrecords for **RNet**.
-11. After training **RNet**, run `gen_hard_example.py --test_mode RNet` to generate training data(Face Detection Part) for **ONet**.
-12. Run `gen_landmark_data.py ONet` to generate training data(Face Landmark Detection Part) for **ONet**.
-13. Run `gen_imglist.py ONet` to merge two parts of training data.
-14. Run `gen_tfrecords.py ONet` to generate tfrecords for **ONet**.
+7. In `train_models/`, run `train_net.py PNet` to train **PNet**.
+8. After training **PNet**, run `gen_hard_example.py --test_mode PNet` to generate training data(Face Detection Part) for **RNet**.
+9. Run `gen_landmark_data.py RNet` to generate training data(Face Landmark Detection Part) for **RNet**.
+10. Run `gen_imglist.py PNet` to merge two parts of training data.
+11. Run `gen_tfrecords.py RNet` to generate tfrecords for **RNet**.
+12. In `train_models/`, run `train_net.py RNet` to train **RNet**.
+13. After training **RNet**, run `gen_hard_example.py --test_mode RNet` to generate training data(Face Detection Part) for **ONet**.
+14. Run `gen_landmark_data.py ONet` to generate training data(Face Landmark Detection Part) for **ONet**.
+15. Run `gen_imglist.py ONet` to merge two parts of training data.
+16. Run `gen_tfrecords.py ONet` to generate tfrecords for **ONet**.
+17. In `train_models/`, run `train_net.py ONet` to train **ONet**.
 
 ## Some Details
 * When training **PNet**,I merge four parts of data(pos,part,landmark,neg) into one tfrecord,since their total number radio is almost 1:1:1:3.But when training **RNet** and **ONet**,I generate four tfrecords,since their total number is not balanced.During training,I read 64 samples from pos,part and landmark tfrecord and read 192 samples from neg tfrecord to construct mini-batch.
