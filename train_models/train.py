@@ -164,10 +164,10 @@ def train(net_factory, prefix, end_epoch, base_dir,
         radio_bbox_loss = 0.5
         radio_landmark_loss = 0.5
     else:
+        image_size = 48
         radio_cls_loss = 1.0
         radio_bbox_loss = 0.5
         radio_landmark_loss = 1.0
-        image_size = 48
 
     # define placeholder
     input_image = tf.placeholder(
@@ -214,9 +214,7 @@ def train(net_factory, prefix, end_epoch, base_dir,
     tf.summary.scalar("landmark_loss", landmark_loss_op)  # landmark_loss
     tf.summary.scalar("cls_accuracy", accuracy_op)  # cls_acc
     summary_op = tf.summary.merge_all()
-    logs_dir = "../logs/%s" % (net)
-    if os.path.exists(logs_dir) == False:
-        os.mkdir(logs_dir)
+    logs_dir = os.path.dirname(prefix)
     writer = tf.summary.FileWriter(logs_dir, sess.graph)
     # begin
     coord = tf.train.Coordinator()
@@ -237,15 +235,6 @@ def train(net_factory, prefix, end_epoch, base_dir,
             # random flip
             image_batch_array, landmark_batch_array = random_flip_images(
                 image_batch_array, label_batch_array, landmark_batch_array)
-            '''
-            print image_batch_array.shape
-            print label_batch_array.shape
-            print bbox_batch_array.shape
-            print landmark_batch_array.shape
-            print label_batch_array[0]
-            print bbox_batch_array[0]
-            print landmark_batch_array[0]
-            '''
 
             sess_input = [train_op, lr_op, summary_op,
                           cls_loss_op, bbox_loss_op, landmark_loss_op,
@@ -264,9 +253,7 @@ def train(net_factory, prefix, end_epoch, base_dir,
             acc = sess_output[7]
 
             if (step + 1) % display == 0:
-                print(
-                    "%s : Step: %d, accuracy: %3f, cls loss: %4f, bbox loss: %4f, landmark loss: %4f,L2 loss: %4f,lr:%f " %
-                    (datetime.now(), step + 1, acc, cls_loss, bbox_loss, landmark_loss, L2_loss, lr))
+                print("%s : Step: %d, accuracy: %3f, cls loss: %4f, bbox loss: %4f, landmark loss: %4f,L2 loss: %4f,lr:%f " % (datetime.now(), step + 1, acc, cls_loss, bbox_loss, landmark_loss, L2_loss, lr))
             # save every two epochs
             if i * config.BATCH_SIZE > num * 2:
                 epoch = epoch + 1
