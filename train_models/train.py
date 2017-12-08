@@ -8,7 +8,6 @@ sys.path.append("../prepare_data")
 print sys.path
 from read_tfrecord_v2 import read_multi_tfrecords, read_single_tfrecord
 from MTCNN_config import config
-from mtcnn_model import P_Net
 import random
 import numpy.random as npr
 import cv2
@@ -44,30 +43,6 @@ def train_model(base_lr, loss, data_num):
     return train_op, lr_op
 
 
-'''
-certain samples mirror
-def random_flip_images(image_batch,label_batch,landmark_batch):
-    num_images = image_batch.shape[0]
-    random_number = npr.choice([0,1],num_images,replace=True)
-    #the index of image needed to flip
-    indexes = np.where(random_number>0)[0]
-    fliplandmarkindexes = np.where(label_batch[indexes]==-2)[0]
-
-    #random flip
-    for i in indexes:
-        cv2.flip(image_batch[i],1,image_batch[i])
-    #pay attention: flip landmark
-    for i in fliplandmarkindexes:
-        landmark_ = landmark_batch[i].reshape((-1,2))
-        landmark_ = np.asarray([(1-x, y) for (x, y) in landmark_])
-        landmark_[[0, 1]] = landmark_[[1, 0]]#left eye<->right eye
-        landmark_[[3, 4]] = landmark_[[4, 3]]#left mouth<->right mouth
-        landmark_batch[i] = landmark_.ravel()
-    return image_batch,landmark_batch
-'''
-# all mini-batch mirror
-
-
 def random_flip_images(image_batch, label_batch, landmark_batch):
     # mirror
     if random.choice([0, 1]) > 0:
@@ -91,33 +66,20 @@ def random_flip_images(image_batch, label_batch, landmark_batch):
     return image_batch, landmark_batch
 
 
-def train(net_factory, prefix, end_epoch, base_dir,
+def train(net_factory, net, experiment_folder, dataset_folder, end_epoch,
           display=200, base_lr=0.01):
-    """
-    train PNet/RNet/ONet
-    :param net_factory:
-    :param prefix:
-    :param end_epoch:16
-    :param dataset:
-    :param display:
-    :param base_lr:
-    :return:
-    """
-    net = prefix.split('/')[-1]
+
     # label file
-    label_file = os.path.join(base_dir, 'train_%s_landmark.txt' % net)
-    #label_file = os.path.join(base_dir,'landmark_12_few.txt')
+    label_file = os.path.join(dataset_folder, 'train_%s_landmark.txt' % net)
     print label_file
     f = open(label_file, 'r')
     num = len(f.readlines())
     print("Total datasets is: ", num)
-    print prefix
 
     # PNet use this method to get data
     if net == 'PNet':
-        #dataset_dir = os.path.join(base_dir,'train_%s_ALL.tfrecord_shuffle' % net)
         dataset_dir = os.path.join(
-            base_dir,
+            dataset_folder,
             'train_%s_landmark.tfrecord_shuffle' %
             net)
         print dataset_dir
@@ -126,11 +88,11 @@ def train(net_factory, prefix, end_epoch, base_dir,
 
     # RNet use 3 tfrecords to get data
     else:
-        pos_dir = os.path.join(base_dir, 'pos_landmark.tfrecord_shuffle')
-        part_dir = os.path.join(base_dir, 'part_landmark.tfrecord_shuffle')
-        neg_dir = os.path.join(base_dir, 'neg_landmark.tfrecord_shuffle')
+        pos_dir = os.path.join(dataset_folder, 'pos_landmark.tfrecord_shuffle')
+        part_dir = os.path.join(dataset_folder, 'part_landmark.tfrecord_shuffle')
+        neg_dir = os.path.join(dataset_folder, 'neg_landmark.tfrecord_shuffle')
         landmark_dir = os.path.join(
-            base_dir, 'landmark_landmark.tfrecord_shuffle')
+            dataset_folder, 'landmark_landmark.tfrecord_shuffle')
         dataset_dirs = [pos_dir, part_dir, neg_dir, landmark_dir]
         pos_radio = 1.0 / 6
         part_radio = 1.0 / 6
@@ -214,8 +176,7 @@ def train(net_factory, prefix, end_epoch, base_dir,
     tf.summary.scalar("landmark_loss", landmark_loss_op)  # landmark_loss
     tf.summary.scalar("cls_accuracy", accuracy_op)  # cls_acc
     summary_op = tf.summary.merge_all()
-    logs_dir = os.path.dirname(prefix)
-    writer = tf.summary.FileWriter(logs_dir, sess.graph)
+    writer = tf.summary.FileWriter(experiment_folder, sess.graph)
     # begin
     coord = tf.train.Coordinator()
     # begin enqueue thread
@@ -258,7 +219,7 @@ def train(net_factory, prefix, end_epoch, base_dir,
             if i * config.BATCH_SIZE > num * 2:
                 epoch = epoch + 1
                 i = 0
-                saver.save(sess, prefix, global_step=epoch * 2)
+                saver.save(sess, experiment_folder, global_step=epoch * 2)
             writer.add_summary(summary, global_step=step)
     except tf.errors.OutOfRangeError:
         print("完成！！！")
