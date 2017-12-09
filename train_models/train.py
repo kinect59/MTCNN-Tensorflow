@@ -219,7 +219,8 @@ def train(net_factory, net, experiment_folder, dataset_folder, end_epoch,
             if i * config.BATCH_SIZE > num * 2:
                 epoch = epoch + 1
                 i = 0
-                saver.save(sess, experiment_folder, global_step=epoch * 2)
+                model_filename = os.path.join(experiment_folder, net)
+                saver.save(sess, model_filename, global_step=epoch * 2)
             writer.add_summary(summary, global_step=step)
     except tf.errors.OutOfRangeError:
         print("完成！！！")
