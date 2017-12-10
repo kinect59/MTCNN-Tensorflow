@@ -163,6 +163,7 @@ def t_net(prefix, epoch, data_dir,
     # gt_imdb = imdb.gt_imdb()
     test_data = TestLoader(data['images'])
     #list
+    print("Getting detections for {} images.".format(test_data.size))
     detections,_ = mtcnn_detector.detect_face(test_data)
 
     save_net = 'RNet'
