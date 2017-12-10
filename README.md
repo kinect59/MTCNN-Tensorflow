@@ -14,17 +14,17 @@ This work is used for reproduce MTCNN, a Joint Face Detection and Alignment usin
 1. Download the [WIDER Face Dataset](http://mmlab.ie.cuhk.edu.hk/projects/WIDERFace/). Unzip it and put the `WIDER_train` folder in the `prepare_data` folder.
 2. Download the [Landmark Dataset](http://mmlab.ie.cuhk.edu.hk/archive/CNN_FacePoint.htm). Unzip it and put both the `lfw_5590` and `net_7876` into the `prepare_data` folder.
 3. Run `gen_12net_data.py` to generate training data(Face Detection Part) for **PNet**.
-4. Run `gen_landmark_data.py PNet` to generate training data(Face Landmark Detection Part) for **PNet**.
+4. Run `gen_landmark_data.py lfwnet PNet` to generate training data(Face Landmark Detection Part) for **PNet**.
 5. Run `gen_imglist.py PNet` to merge two parts of training data.
 6. Run `gen_tfrecords.py PNet` to generate tfrecord for **PNet**.
 7. In `train_models/`, run `train_net.py PNet` to train **PNet**.
 8. After training **PNet**, run `gen_hard_example.py --test_mode PNet` to generate training data(Face Detection Part) for **RNet**.
-9. Run `gen_landmark_data.py RNet` to generate training data(Face Landmark Detection Part) for **RNet**.
+9. Run `gen_landmark_data.py lfwnet RNet` to generate training data(Face Landmark Detection Part) for **RNet**.
 10. Run `gen_imglist.py PNet` to merge two parts of training data.
 11. Run `gen_tfrecords.py RNet` to generate tfrecords for **RNet**.
 12. In `train_models/`, run `train_net.py RNet` to train **RNet**.
 13. After training **RNet**, run `gen_hard_example.py --test_mode RNet` to generate training data(Face Detection Part) for **ONet**.
-14. Run `gen_landmark_data.py ONet` to generate training data(Face Landmark Detection Part) for **ONet**.
+14. Run `gen_landmark_data.py lfwnet ONet` to generate training data(Face Landmark Detection Part) for **ONet**.
 15. Run `gen_imglist.py ONet` to merge two parts of training data.
 16. Run `gen_tfrecords.py ONet` to generate tfrecords for **ONet**.
 17. In `train_models/`, run `train_net.py ONet` to train **ONet**.
