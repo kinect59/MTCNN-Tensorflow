@@ -26,7 +26,7 @@ def IoU(box, boxes):
     w = np.maximum(0, xx2 - xx1 + 1)
     h = np.maximum(0, yy2 - yy1 + 1)
 
-    inter = w * h
+    inter = float(w * h)
     ovr = inter / (box_area + area - inter)
     return ovr
 
