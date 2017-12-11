@@ -7,14 +7,59 @@ import argparse
 import os
 import cPickle as pickle
 import cv2
-from train_models.mtcnn_model import P_Net,R_Net
-from train_models.MTCNN_config import config
+from train_models.mtcnn_model import P_Net, R_Net
 from loader import TestLoader
 from Detection.detector import Detector
 from Detection.fcn_detector import FcnDetector
 from Detection.MtcnnDetector import MtcnnDetector
 from BBox_utils import IoU, convert_to_square
-from data_utils import *
+
+
+def read_annotation(base_dir, label_path):
+    """
+    read label file
+    :param dir: path
+    :return:
+    """
+    data = dict()
+    images = []
+    bboxes = []
+    labelfile = open(label_path, 'r')
+    while True:
+        # image path
+        imagepath = labelfile.readline().strip('\n')
+        if not imagepath:
+            break
+        imagepath = base_dir + '/WIDER_train/images/' + imagepath
+        images.append(imagepath)
+        # face numbers
+        nums = labelfile.readline().strip('\n')
+        # im = cv2.imread(imagepath)
+        # h, w, c = im.shape
+        one_image_bboxes = []
+        for i in range(int(nums)):
+            # text = ''
+            # text = text + imagepath
+            bb_info = labelfile.readline().strip('\n').split(' ')
+            # only need x, y, w, h
+            face_box = [float(bb_info[i]) for i in range(4)]
+            # text = text + ' ' + str(face_box[0] / w) + ' ' + str(face_box[1] / h)
+            xmin = face_box[0]
+            ymin = face_box[1]
+            xmax = xmin + face_box[2]
+            ymax = ymin + face_box[3]
+            # text = text + ' ' + str(xmax / w) + ' ' + str(ymax / h)
+            one_image_bboxes.append([xmin, ymin, xmax, ymax])
+            # f.write(text + '\n')
+        bboxes.append(one_image_bboxes)
+
+
+    data['images'] = images#all image pathes
+    data['bboxes'] = bboxes#all image bboxes
+    # f.close()
+    return data
+
+
 #net : 24(RNet)/48(ONet)
 #data: dict()
 def save_hard_example(net, data,save_path):
@@ -85,7 +130,7 @@ def save_hard_example(net, data,save_path):
             # Iou with all gts must below 0.3            
             if np.max(Iou) < 0.3 and neg_num < 60:
                 #save the examples
-                save_file = get_path(neg_dir, "%s.jpg" % n_idx)
+                save_file = os.path.join(neg_dir, "%s.jpg" % n_idx)
                 # print(save_file)
                 neg_file.write(save_file + ' 0\n')
                 cv2.imwrite(save_file, resized_im)
@@ -105,7 +150,7 @@ def save_hard_example(net, data,save_path):
 
                 # save positive and part-face images and write labels
                 if np.max(Iou) >= 0.65:
-                    save_file = get_path(pos_dir, "%s.jpg" % p_idx)
+                    save_file = os.path.join(pos_dir, "%s.jpg" % p_idx)
                     pos_file.write(save_file + ' 1 %.2f %.2f %.2f %.2f\n' % (
                         offset_x1, offset_y1, offset_x2, offset_y2))
                     cv2.imwrite(save_file, resized_im)
@@ -227,9 +272,9 @@ if __name__ == '__main__':
     base_dir = '../prepare_data/WIDER_train'
     data_dir = '%s' % str(image_size)
 
-    neg_dir = get_path(data_dir, 'negative')
-    pos_dir = get_path(data_dir, 'positive')
-    part_dir = get_path(data_dir, 'part')
+    neg_dir = os.path.join(data_dir, 'negative')
+    pos_dir = os.path.join(data_dir, 'positive')
+    part_dir = os.path.join(data_dir, 'part')
 
     #create dictionary shuffle
     for dir_path in [neg_dir, pos_dir, part_dir]:
