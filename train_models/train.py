@@ -3,14 +3,12 @@ import tensorflow as tf
 import numpy as np
 import os
 from datetime import datetime
-import sys
-sys.path.append("../prepare_data")
-print sys.path
-from read_tfrecord_v2 import read_multi_tfrecords, read_single_tfrecord
-from MTCNN_config import config
 import random
 import numpy.random as npr
 import cv2
+
+from read_tfrecord_v2 import read_multi_tfrecords, read_single_tfrecord
+from MTCNN_config import config
 
 
 def train_model(base_lr, loss, data_num):
