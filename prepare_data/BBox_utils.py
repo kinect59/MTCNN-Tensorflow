@@ -1,11 +1,8 @@
 # coding: utf-8
-
 import os
-from os.path import join, exists
 import time
 import cv2
 import numpy as np
-#from .cnns import getCNNs
 
 
 def logger(msg):
@@ -18,6 +15,7 @@ def logger(msg):
 def createDir(p):
     if not os.path.exists(p):
         os.mkdir(p)
+
 #shuffle in the same way
 def shuffle_in_unison_scary(a, b):
     rng_state = np.random.get_state()
