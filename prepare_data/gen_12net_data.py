@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import os
 import numpy.random as npr
-from utils import IoU
+from BBox_utils import IoU
 anno_file = "wider_face_train.txt"
 im_dir = "WIDER_train/images"
 pos_save_dir = "12/positive"

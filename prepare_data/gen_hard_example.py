@@ -13,7 +13,7 @@ from loader import TestLoader
 from Detection.detector import Detector
 from Detection.fcn_detector import FcnDetector
 from Detection.MtcnnDetector import MtcnnDetector
-from utils import *
+from BBox_utils import IoU, convert_to_square
 from data_utils import *
 #net : 24(RNet)/48(ONet)
 #data: dict()
