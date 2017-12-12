@@ -31,7 +31,7 @@ def read_celeba_train_list(filepath, img_folder):
     data = []
     for it, row in enumerate(df.itertuples()):
 
-        if row.split == 2: # only use train (split=0) and val (split=1) images
+        if row.split == 2:  # only use train (split=0) and val (split=1) images
             continue
 
         if np.any(np.isnan(np.array(row[2:]))):
@@ -39,21 +39,27 @@ def read_celeba_train_list(filepath, img_folder):
             continue
 
         img_path = os.path.join(img_folder, row.image_id)
-        bbox = [row.x_1, row.y_1, row.x_1 + row.width, row.y_1 + row.height] # x1, y1, x2, y2
+        bbox = [
+            row.x_1,
+            row.y_1,
+            row.x_1 +
+            row.width,
+            row.y_1 +
+            row.height]  # x1, y1, x2, y2
         landmarks = np.array(row[6:16])
-        landmarks = landmarks.reshape(5, 2) # [ [x1,y1], [x2,y2] ... ]
+        landmarks = landmarks.reshape(5, 2)  # [ [x1,y1], [x2,y2] ... ]
 
         if row.width <= 0 or row.height <= 0:
             print("Skipping bad bbox as row {}:\n {}.".format(it, row))
             continue
 
         #img = cv2.imread(img_path)
-        #plt.imshow(img)
+        # plt.imshow(img)
         #plt.scatter(landmarks[:, 0], landmarks[:, 1])
         #ax = plt.gca()
         #import matplotlib.patches as patches
         #ax.add_patch(patches.Rectangle(bbox[0:2], bbox[2]-bbox[0], bbox[3]-bbox[1], fill=False))
-        #plt.savefig('test-landmarks.png')
+        # plt.savefig('test-landmarks.png')
 
         data_cur = (img_path, BBox(bbox), landmarks)
         data.append(data_cur)
@@ -75,16 +81,21 @@ def read_lfwnet_train_list(filepath, img_folder):
     for line in lines:
         components = line.strip().split(' ')
         img_path = os.path.join(img_folder, components[0])
-        bbox = [int(components[i]) for i in [1, 3, 2, 4]] # x1, y1, x2, y2
+        bbox = [int(components[i]) for i in [1, 3, 2, 4]]  # x1, y1, x2, y2
         landmarks = np.array([float(v) for v in components[5:]])
-        landmarks = landmarks.reshape(5, 2) # [ [x1,y1], [x2,y2] ... ]
+        landmarks = landmarks.reshape(5, 2)  # [ [x1,y1], [x2,y2] ... ]
         data_cur = (img_path, BBox(bbox), landmarks)
         data.append(data_cur)
 
     return data
 
 
-def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
+def generate_data(
+        data,
+        save_folder,
+        landmark_aug_save_folder,
+        imsize,
+        augment):
 
     savefile = os.path.join(save_folder, "landmark_{}_aug.txt".format(imsize))
     if os.path.exists(savefile):
@@ -109,7 +120,8 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
         f_face = cv2.resize(f_face, (imsize, imsize))
 
         # landmark: shifted and normalized by width and height
-        landmark = (landmarkGt - gt_box[0:2]).astype(float) / np.array([[bbox.w, bbox.h]])
+        landmark = (
+            landmarkGt - gt_box[0:2]).astype(float) / np.array([[bbox.w, bbox.h]])
 
         F_imgs.append(f_face)
         F_landmarks.append(landmark.ravel())
@@ -143,7 +155,8 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
                 if iou > 0.65:
                     F_imgs.append(resized_im)
                     # normalize
-                    landmark = (landmarkGt - np.array([[nx1, ny1]])) / bbox_size
+                    landmark = (
+                        landmarkGt - np.array([[nx1, ny1]])) / bbox_size
                     F_landmarks.append(landmark.reshape(10))
                     landmark_ = F_landmarks[-1].reshape(-1, 2)
                     bbox = BBox([nx1, ny1, nx2, ny2])
@@ -152,7 +165,8 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
                     if random.choice([0, 1]) > 0:
                         face_flipped, landmark_flipped = flip(
                             resized_im, landmark_)
-                        face_flipped = cv2.resize(face_flipped, (imsize, imsize))
+                        face_flipped = cv2.resize(
+                            face_flipped, (imsize, imsize))
                         # c*h*w
                         F_imgs.append(face_flipped)
                         F_landmarks.append(landmark_flipped.reshape(10))
@@ -171,7 +185,8 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
                         # flip
                         face_flipped, landmark_flipped = flip(
                             face_rotated_by_alpha, landmark_rotated)
-                        face_flipped = cv2.resize(face_flipped, (imsize, imsize))
+                        face_flipped = cv2.resize(
+                            face_flipped, (imsize, imsize))
                         F_imgs.append(face_flipped)
                         F_landmarks.append(landmark_flipped.reshape(10))
 
@@ -188,10 +203,10 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
 
                         face_flipped, landmark_flipped = flip(
                             face_rotated_by_alpha, landmark_rotated)
-                        face_flipped = cv2.resize(face_flipped, (imsize, imsize))
+                        face_flipped = cv2.resize(
+                            face_flipped, (imsize, imsize))
                         F_imgs.append(face_flipped)
                         F_landmarks.append(landmark_flipped.reshape(10))
-
 
         for i in range(len(F_imgs)):
 
@@ -199,7 +214,9 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
                 continue
 
             # save image
-            img_filepath = os.path.join(landmark_aug_save_folder, "{}.jpg".format(index))
+            img_filepath = os.path.join(
+                landmark_aug_save_folder,
+                "{}.jpg".format(index))
             cv2.imwrite(img_filepath, F_imgs[i])
 
             # save meta information
@@ -262,4 +279,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     process_dataset(args.dataset_type, args.net_type)
-

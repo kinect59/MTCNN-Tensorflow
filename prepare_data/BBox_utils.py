@@ -12,22 +12,28 @@ def logger(msg):
     now = time.ctime()
     print("[%s] %s" % (now, msg))
 
+
 def createDir(p):
     if not os.path.exists(p):
         os.mkdir(p)
 
-#shuffle in the same way
+# shuffle in the same way
+
+
 def shuffle_in_unison_scary(a, b):
     rng_state = np.random.get_state()
     np.random.shuffle(a)
     np.random.set_state(rng_state)
     np.random.shuffle(b)
 
+
 def drawLandmark(img, bbox, landmark):
-    cv2.rectangle(img, (bbox.left, bbox.top), (bbox.right, bbox.bottom), (0,0,255), 2)
+    cv2.rectangle(img, (bbox.left, bbox.top),
+                  (bbox.right, bbox.bottom), (0, 0, 255), 2)
     for x, y in landmark:
-        cv2.circle(img, (int(x), int(y)), 2, (0,255,0), -1)
+        cv2.circle(img, (int(x), int(y)), 2, (0, 255, 0), -1)
     return img
+
 
 def getDataFromTxt(txt, with_landmark=True):
     """
@@ -36,7 +42,7 @@ def getDataFromTxt(txt, with_landmark=True):
             bbox: [left, right, top, bottom]
             landmark: [(x1, y1), (x2, y2), ...]
     """
-    #get dirname
+    # get dirname
     dirname = os.path.dirname(txt)
     with open(txt, 'r') as fd:
         lines = fd.readlines()
@@ -45,21 +51,22 @@ def getDataFromTxt(txt, with_landmark=True):
     for line in lines:
         line = line.strip()
         components = line.split(' ')
-        img_path = os.path.join(dirname, components[0]) # file path
+        img_path = os.path.join(dirname, components[0])  # file path
         # bounding box, (x1, y1, x2, y2)
         #bbox = (components[1], components[2], components[3], components[4])
-        bbox = (components[1], components[3], components[2], components[4])        
+        bbox = (components[1], components[3], components[2], components[4])
         bbox = [float(_) for _ in bbox]
-        bbox = map(int,bbox)
+        bbox = map(int, bbox)
         # landmark
         if not with_landmark:
             result.append((img_path, BBox(bbox)))
             continue
         landmark = np.zeros((5, 2))
         for index in range(0, 5):
-            rv = (float(components[5+2*index]), float(components[5+2*index+1]))
+            rv = (float(components[5 + 2 * index]),
+                  float(components[5 + 2 * index + 1]))
             landmark[index] = rv
-        #normalize
+        # normalize
         '''
         for index, one in enumerate(landmark):
             rv = ((one[0]-bbox[0])/(bbox[2]-bbox[0]), (one[1]-bbox[1])/(bbox[3]-bbox[1]))
@@ -67,6 +74,7 @@ def getDataFromTxt(txt, with_landmark=True):
         '''
         result.append((img_path, BBox(bbox), landmark))
     return result
+
 
 def getPatch(img, bbox, point, padding):
     """
@@ -79,9 +87,10 @@ def getPatch(img, bbox, point, padding):
     patch_right = point_x + bbox.w * padding
     patch_top = point_y - bbox.h * padding
     patch_bottom = point_y + bbox.h * padding
-    patch = img[patch_top: patch_bottom+1, patch_left: patch_right+1]
+    patch = img[patch_top: patch_bottom + 1, patch_left: patch_right + 1]
     patch_bbox = BBox([patch_left, patch_right, patch_top, patch_bottom])
     return patch, patch_bbox
+
 
 '''
 def processImageOriginal(imgs):
@@ -96,6 +105,8 @@ def processImageOriginal(imgs):
         imgs[i] = (img - m) / s
     return imgs
 '''
+
+
 def processImage(imgs):
     """
         process images before feeding to CNNs
@@ -105,6 +116,7 @@ def processImage(imgs):
     for i, img in enumerate(imgs):
         imgs[i] = (img - 127.5) / 128
     return imgs
+
 
 def dataArgument(data):
     """
@@ -116,16 +128,18 @@ def dataArgument(data):
     """
     pass
 
+
 class BBox(object):
     """
         Bounding Box of face
     """
+
     def __init__(self, bbox):
         self.left = bbox[0]
         self.top = bbox[1]
         self.right = bbox[2]
         self.bottom = bbox[3]
-        
+
         self.x = bbox[0]
         self.y = bbox[1]
         self.w = bbox[2] - bbox[0]
@@ -138,31 +152,36 @@ class BBox(object):
         bbox[2] -= int(self.h * scale)
         bbox[3] += int(self.h * scale)
         return BBox(bbox)
-    #offset
+    # offset
+
     def project(self, point):
-        x = (point[0]-self.x) / self.w
-        y = (point[1]-self.y) / self.h
+        x = (point[0] - self.x) / self.w
+        y = (point[1] - self.y) / self.h
         return np.asarray([x, y])
-    #absolute position(image (left,top))
+    # absolute position(image (left,top))
+
     def reproject(self, point):
-        x = self.x + self.w*point[0]
-        y = self.y + self.h*point[1]
+        x = self.x + self.w * point[0]
+        y = self.y + self.h * point[1]
         return np.asarray([x, y])
-    #landmark: 5*2
+    # landmark: 5*2
+
     def reprojectLandmark(self, landmark):
         p = np.zeros((len(landmark), 2))
         for i in range(len(landmark)):
             p[i] = self.reproject(landmark[i])
         return p
-    #change to offset according to bbox
+    # change to offset according to bbox
+
     def projectLandmark(self, landmark):
         p = np.zeros((len(landmark), 2))
         for i in range(len(landmark)):
             p[i] = self.project(landmark[i])
         return p
     #f_bbox = bbox.subBBox(-0.05, 1.05, -0.05, 1.05)
-    #self.w bounding-box width
-    #self.h bounding-box height
+    # self.w bounding-box width
+    # self.h bounding-box height
+
     def subBBox(self, leftR, rightR, topR, bottomR):
         leftDelta = self.w * leftR
         rightDelta = self.w * rightR
@@ -191,9 +210,9 @@ def convert_to_square(bbox):
 
     h = bbox[:, 3] - bbox[:, 1] + 1
     w = bbox[:, 2] - bbox[:, 0] + 1
-    max_side = np.maximum(h,w)
-    square_bbox[:, 0] = bbox[:, 0] + w*0.5 - max_side*0.5
-    square_bbox[:, 1] = bbox[:, 1] + h*0.5 - max_side*0.5
+    max_side = np.maximum(h, w)
+    square_bbox[:, 0] = bbox[:, 0] + w * 0.5 - max_side * 0.5
+    square_bbox[:, 1] = bbox[:, 1] + h * 0.5 - max_side * 0.5
     square_bbox[:, 2] = square_bbox[:, 0] + max_side - 1
     square_bbox[:, 3] = square_bbox[:, 1] + max_side - 1
     return square_bbox

@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import os
 import random
 import sys
@@ -17,10 +17,10 @@ def _add_to_tfrecord(filename, image_example, tfrecord_writer):
       name: Image name to add to the TFRecord;
       tfrecord_writer: The TFRecord writer to use for writing.
     """
-    #imaga_data:array to string
-    #height:original image's height
-    #width:original image's width
-    #image_example dict contains image's info
+    # imaga_data:array to string
+    # height:original image's height
+    # width:original image's width
+    # image_example dict contains image's info
     image_data, height, width = _process_image_withoutcoder(filename)
     example = _convert_to_example_simple(image_example, image_data)
     tfrecord_writer.write(example.SerializeToString())
@@ -119,7 +119,9 @@ def run(input_dir, output_dir, net, shuffling=False):
         with tf.python_io.TFRecordWriter(tf_filename) as tfrecord_writer:
             for i, image_example in enumerate(dataset):
                 if i % 100000 == 0:
-                    sys.stdout.write('\r>> Converting image %d/%d' % (i + 1, len(dataset)))
+                    sys.stdout.write(
+                        '\r>> Converting image %d/%d' %
+                        (i + 1, len(dataset)))
                     sys.stdout.flush()
                 filename = image_example['filename']
                 _add_to_tfrecord(filename, image_example, tfrecord_writer)

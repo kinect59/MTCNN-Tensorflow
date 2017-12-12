@@ -2,19 +2,19 @@ import numpy as np
 import sys
 import cv2
 #import minibatch
-#sys.path.append("../")
+# sys.path.append("../")
 #from train_models.MTCNN_config import config
 
 
 class TestLoader:
-    #imdb image_path(list)
+    # imdb image_path(list)
     def __init__(self, imdb, batch_size=1, shuffle=False):
         self.imdb = imdb
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.size = len(imdb)#num of data
+        self.size = len(imdb)  # num of data
         #self.index = np.arange(self.size)
-        
+
         self.cur = 0
         self.data = None
         self.label = None
@@ -25,16 +25,17 @@ class TestLoader:
     def reset(self):
         self.cur = 0
         if self.shuffle:
-            #shuffle test image
+            # shuffle test image
             np.random.shuffle(self.imdb)
 
     def iter_next(self):
         return self.cur + self.batch_size <= self.size
-    #realize __iter__() and next()--->iterator
-    #return iter object
+    # realize __iter__() and next()--->iterator
+    # return iter object
+
     def __iter__(self):
         return self
-    
+
     def __next__(self):
         return self.next()
 
@@ -64,11 +65,12 @@ class TestLoader:
         imdb = [self.imdb[self.index[i]] for i in range(cur_from, cur_to)]
         # print(imdb)
         '''
-        #print type(imdb)
-        #print len(imdb)
+        # print type(imdb)
+        # print len(imdb)
         #assert len(imdb) == 1, "Single batch only"
         im = cv2.imread(imdb)
         self.data = im
+
 
 """
 

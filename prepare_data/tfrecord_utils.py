@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import tensorflow as tf
 import os
 import cv2
@@ -26,7 +26,12 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=value))
 
 
-def _convert_to_example(image_example, image_buffer, colorspace=b'RGB', channels=3, image_format=b'JPEG'):
+def _convert_to_example(
+        image_example,
+        image_buffer,
+        colorspace=b'RGB',
+        channels=3,
+        image_format=b'JPEG'):
     """
     covert to tfrecord file
     :param image_example: dict, an image example
@@ -62,6 +67,8 @@ def _convert_to_example(image_example, image_buffer, colorspace=b'RGB', channels
         'image/image_bbox/ymax': _float_feature(ymax),
     }))
     return example
+
+
 def _convert_to_example_simple(image_example, image_buffer):
     """
     covert to tfrecord file
@@ -78,11 +85,19 @@ def _convert_to_example_simple(image_example, image_buffer):
     # class label for the whole image
     class_label = image_example['label']
     bbox = image_example['bbox']
-    roi = [bbox['xmin'],bbox['ymin'],bbox['xmax'],bbox['ymax']]
-    landmark = [bbox['xlefteye'],bbox['ylefteye'],bbox['xrighteye'],bbox['yrighteye'],bbox['xnose'],bbox['ynose'],
-                bbox['xleftmouth'],bbox['yleftmouth'],bbox['xrightmouth'],bbox['yrightmouth']]
-                
-      
+    roi = [bbox['xmin'], bbox['ymin'], bbox['xmax'], bbox['ymax']]
+    landmark = [
+        bbox['xlefteye'],
+        bbox['ylefteye'],
+        bbox['xrighteye'],
+        bbox['yrighteye'],
+        bbox['xnose'],
+        bbox['ynose'],
+        bbox['xleftmouth'],
+        bbox['yleftmouth'],
+        bbox['xrightmouth'],
+        bbox['yrightmouth']]
+
     example = tf.train.Example(features=tf.train.Features(feature={
         'image/encoded': _bytes_feature(image_buffer),
         'image/label': _int64_feature(class_label),
@@ -92,9 +107,9 @@ def _convert_to_example_simple(image_example, image_buffer):
     return example
 
 
-
 class ImageCoder(object):
     """Helper class that provides TensorFlow image coding utilities."""
+
     def __init__(self):
         # Create a single Session to run all image coding calls.
         self._sess = tf.Session()
@@ -102,11 +117,13 @@ class ImageCoder(object):
         # Initializes function that converts PNG to JPEG data.
         self._png_data = tf.placeholder(dtype=tf.string)
         image = tf.image.decode_png(self._png_data, channels=3)
-        self._png_to_jpeg = tf.image.encode_jpeg(image, format='rgb', quality=100)
+        self._png_to_jpeg = tf.image.encode_jpeg(
+            image, format='rgb', quality=100)
 
         # Initializes function that decodes RGB JPEG data.
         self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
-        self._decode_jpeg = tf.image.decode_jpeg(self._decode_jpeg_data, channels=3)
+        self._decode_jpeg = tf.image.decode_jpeg(
+            self._decode_jpeg_data, channels=3)
 
     def png_to_jpeg(self, image_data):
         # Convert the image data from png to jpg
@@ -117,7 +134,8 @@ class ImageCoder(object):
         # Decode the image data as a jpeg image
         image = self._sess.run(self._decode_jpeg,
                                feed_dict={self._decode_jpeg_data: image_data})
-        assert len(image.shape) == 3, "JPEG needs to have height x width x channels"
+        assert len(
+            image.shape) == 3, "JPEG needs to have height x width x channels"
         assert image.shape[2] == 3, "JPEG needs to have 3 channels (RGB)"
         return image
 
@@ -175,6 +193,8 @@ def _process_image(filename, coder):
     assert image.shape[2] == 3
 
     return image_data, height, width
+
+
 def _process_image_withoutcoder(filename):
     image = cv2.imread(filename)
     image_data = image.tostring()
@@ -183,6 +203,3 @@ def _process_image_withoutcoder(filename):
     width = image.shape[1]
     assert image.shape[2] == 3
     return image_data, height, width
-
-
-
