@@ -46,7 +46,7 @@ for annotation in annotations:
     #load image
     img = cv2.imread(os.path.join(im_dir, im_path + '.jpg'))
     idx += 1
-    if (idx % 1000) == 0:
+    if (idx % 10000) == 0:
 	    print "%s images done, pos: %s part: %s neg: %s"%(idx, p_idx, d_idx, n_idx)
 
     height, width, channel = img.shape

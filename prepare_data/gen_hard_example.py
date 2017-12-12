@@ -71,7 +71,7 @@ def save_hard_example(net, data,save_path):
     gt_boxes_list = data['bboxes']
     num_of_images = len(im_idx_list)
 
-    print("processing %d images in total" % num_of_images)
+    print("Processing %d images in total" % num_of_images)
 
     
     # save files
@@ -100,7 +100,7 @@ def save_hard_example(net, data,save_path):
     #gt_boxes_list gt(list)
     for im_idx, dets, gts in zip(im_idx_list, det_boxes, gt_boxes_list):
         gts = np.array(gts, dtype=np.float32).reshape(-1, 4)
-        if image_done % 100 == 0:
+        if image_done % 10000 == 0:
             print("%d images done" % image_done)
         image_done += 1
 

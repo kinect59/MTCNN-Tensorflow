@@ -97,7 +97,7 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
 
     for img_idx, (imgPath, bbox, landmarkGt) in enumerate(data):
 
-        if img_idx % 1000 == 0:
+        if img_idx % 10000 == 0:
             print("Image {} / {}".format(img_idx, len(data)))
 
         F_imgs = []
