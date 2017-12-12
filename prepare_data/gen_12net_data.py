@@ -5,12 +5,14 @@ import cv2
 import os
 import numpy.random as npr
 from BBox_utils import IoU
+
 anno_file = "wider_face_train.txt"
 im_dir = "WIDER_train/images"
 pos_save_dir = "12/positive"
 part_save_dir = "12/part"
 neg_save_dir = '12/negative'
 save_dir = "./12"
+
 if not os.path.exists(save_dir):
     os.mkdir(save_dir)
 if not os.path.exists(pos_save_dir):
@@ -26,7 +28,8 @@ f3 = open(os.path.join(save_dir, 'part_12.txt'), 'w')
 with open(anno_file, 'r') as f:
     annotations = f.readlines()
 num = len(annotations)
-print "%d pics in total" % num
+print("Processing {} images.".format(num))
+
 p_idx = 0 # positive
 n_idx = 0 # negative
 d_idx = 0 # dont care
@@ -43,9 +46,9 @@ for annotation in annotations:
     #load image
     img = cv2.imread(os.path.join(im_dir, im_path + '.jpg'))
     idx += 1
-    if idx % 100 == 0:
-        print idx, "images done"
-        
+    if (idx % 1000) == 0:
+	    print "%s images done, pos: %s part: %s neg: %s"%(idx, p_idx, d_idx, n_idx)
+
     height, width, channel = img.shape
 
     neg_num = 0
@@ -145,7 +148,6 @@ for annotation in annotations:
                 cv2.imwrite(save_file, resized_im)
                 d_idx += 1
         box_idx += 1
-	print "%s images done, pos: %s part: %s neg: %s"%(idx, p_idx, d_idx, n_idx)
 f1.close()
 f2.close()
 f3.close()

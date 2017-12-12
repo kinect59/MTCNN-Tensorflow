@@ -17,7 +17,6 @@ def _add_to_tfrecord(filename, image_example, tfrecord_writer):
       name: Image name to add to the TFRecord;
       tfrecord_writer: The TFRecord writer to use for writing.
     """
-    print('---', filename)
     #imaga_data:array to string
     #height:original image's height
     #width:original image's width
