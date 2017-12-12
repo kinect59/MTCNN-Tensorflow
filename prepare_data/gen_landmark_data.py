@@ -29,18 +29,23 @@ def read_celeba_train_list(filepath, img_folder):
     """
     df = pd.read_csv(filepath)
     data = []
-    for row in df.itertuples():
+    for it, row in enumerate(df.itertuples()):
 
         if row.split == 2: # only use train (split=0) and val (split=1) images
             continue
 
         if np.any(np.isnan(np.array(row[2:]))):
-            print('Error with: {}'.format(row))
+            print('Skipping bad row {}: {}'.format(it, row))
+            continue
 
         img_path = os.path.join(img_folder, row.image_id)
         bbox = [row.x_1, row.y_1, row.x_1 + row.width, row.y_1 + row.height] # x1, y1, x2, y2
         landmarks = np.array(row[6:16])
         landmarks = landmarks.reshape(5, 2) # [ [x1,y1], [x2,y2] ... ]
+
+        if row.width <= 0 or row.height <= 0:
+            print("Skipping bad bbox as row {}:\n {}.".format(it, row))
+            continue
 
         #img = cv2.imread(img_path)
         #plt.imshow(img)
@@ -88,9 +93,11 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
     fid = open(savefile, 'w')
     index = 0
 
+    print("Generating landmark data for {} images".format(len(data)))
+
     for img_idx, (imgPath, bbox, landmarkGt) in enumerate(data):
 
-        if img_idx % 100 == 0:
+        if img_idx % 1000 == 0:
             print("Image {} / {}".format(img_idx, len(data)))
 
         F_imgs = []
@@ -102,7 +109,7 @@ def generate_data(data, save_folder, landmark_aug_save_folder, imsize, augment):
         f_face = cv2.resize(f_face, (imsize, imsize))
 
         # landmark: shifted and normalized by width and height
-        landmark = (landmarkGt - gt_box[0:2]) / np.array([[bbox.w, bbox.h]])
+        landmark = (landmarkGt - gt_box[0:2]).astype(float) / np.array([[bbox.w, bbox.h]])
 
         F_imgs.append(f_face)
         F_landmarks.append(landmark.ravel())
