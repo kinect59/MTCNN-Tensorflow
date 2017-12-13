@@ -152,6 +152,9 @@ def cal_accuracy(cls_prob, label):
 
 def collaborative_block(inputs, nf, training, scope):
 
+    version = 1
+    print("Collaborative block version: {}".format(version))
+
     def conv2d(x, nf, fs):
         y = slim.conv2d(x, nf, [fs, fs], 1, 'SAME', activation_fn=None,
                         weights_initializer=slim.xavier_initializer(),
@@ -166,55 +169,65 @@ def collaborative_block(inputs, nf, training, scope):
     def aggregation(x, n_out, training):
         with tf.variable_scope('aggregation'):
             z = x
+            if z.get_shape()[1].value == 1:
+                fs = 1
+            else:
+                fs = 3
 
-            # version 1
-            #z = conv2d(z, n_out, 1)
-            #z = bn(z, training)
-            #z = tf.nn.relu(z)
-            #z = conv2d(z, n_out, 3)
-            #z = bn(z, training)
+            if version == 1:
+                z = conv2d(z, n_out, 1)
+                z = bn(z, training)
+                z = tf.nn.relu(z)
+                z = conv2d(z, n_out, fs)
+                z = bn(z, training)
+            elif version == 2:
+                z = conv2d(z, n_out, 1)
+                z = bn(z, training)
+                z = tf.nn.relu(z)
+                z = conv2d(z, n_out, fs)
+                z = bn(z, training)
+            elif version == 3:
+                z = conv2d(z, n_out, 1)
+                z = bn(z, training)
+                z = tf.nn.relu(z)
+                z = conv2d(z, n_out, fs)
+                z = bn(z, training)
+                z = tf.nn.relu(z)
+            else:
+                raise Exception("Invalid version number: {}".format(version))
 
-            # version 2
-            z = conv2d(z, n_out, 1)
-            z = bn(z, training)
-            z = tf.nn.relu(z)
-            z = conv2d(z, n_out, 3)
-            z = bn(z, training)
-
-            # version 3
-            #z = bn(z, training)
-            #z = tf.nn.relu(z)
-            #z = conv2d(z, n_out, 1)
-            #z = bn(z, training)
-            #z = tf.nn.relu(z)
-            #z = conv2d(z, n_out, 3)
         return z
 
     def central_aggregation(inputs, n_out, training):
         with tf.variable_scope('central'):
             z = tf.concat(inputs, axis=-1)
             z = aggregation(z, n_out, training)
-            # version 1
-            #z = tf.nn.relu(z)
 
-            # version 2
-            z = tf.nn.relu(z)
+            if version == 1:
+                z = tf.nn.relu(z)
+            elif version == 2:
+                z = tf.nn.relu(z)
+            elif version == 3:
+                pass
+            else:
+                raise Exception("Invalid version number: {}".format(version))
 
-            # version 3 (nothing)
         return z
 
     def local_aggregation(x, z, n_out, pos, training):
         with tf.variable_scope('local_{}'.format(pos)):
             y = tf.concat([x, z], axis=-1)
             y = x + aggregation(y, n_out, training)
-            # version 1 (nothing)
 
-            # version 2
-            y = tf.nn.relu(y)
+            if version == 1:
+                pass
+            elif version == 2:
+                y = tf.nn.relu(y)
+            elif version == 3:
+                pass
+            else:
+                raise Exception("Invalid version number: {}".format(version))
 
-            # version 3
-            #y = bn(y, training)
-            #y = tf.nn.relu(y)
         return y
 
     with tf.variable_scope(scope):
@@ -240,15 +253,15 @@ def P_Net(
                         weights_regularizer=slim.l2_regularizer(0.0005))
         return y
 
-    def maxpool(x, fs, stride):
-        y = slim.max_pool2d(x, [fs, fs], stride, 'SAME')
+    def maxpool(x, fs, stride, pad='VALID'):
+        y = slim.max_pool2d(x, [fs, fs], stride, pad)
         return y
 
     def block0(x, scope):
         with tf.variable_scope(scope):
             y = x
             y = conv2d(y, 10, 3)
-            y = maxpool(y, 2, 2)
+            y = maxpool(y, 2, 2, 'SAME')
         return y
 
     def block1(x, scope):
@@ -258,146 +271,246 @@ def P_Net(
             y = conv2d(y, 32, 3)
         return y
 
-    # start
-    outputs = [input] * 3
+    with tf.variable_scope('PNet'):
+        # start
+        outputs = [input] * 3
 
-    # block 0
-    outputs = [block0(y, 'task_{}_block_0'.format(i)) for i, y in enumerate(outputs)]
-    nf = outputs[0].get_shape().as_list()[-1]
-    outputs = collaborative_block(outputs, nf, training, 'collaborative_block_0')
+        # block 0
+        outputs = [block0(y, 'task_{}_block_0'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_0')
 
-    # block 1
-    outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
-    nf = outputs[0].get_shape().as_list()[-1]
-    outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
+        # block 1
+        outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
 
-    # output
-    cls_pred, bbox_pred, landmark_pred = outputs
+        # output
+        cls_pred, bbox_pred, landmark_pred = outputs
 
-    with tf.variable_scope('classification'):
-        cls_pred = conv2d(cls_pred, 2, 1, None)
-        cls_pred = tf.nn.softmax(cls_pred)
+        with tf.variable_scope('classification'):
+            cls_pred = conv2d(cls_pred, 2, 1, None)
+            cls_pred = tf.nn.softmax(cls_pred)
 
-    with tf.variable_scope('bounding_box'):
-        bbox_pred = conv2d(bbox_pred, 4, 1, None)
+        with tf.variable_scope('bounding_box'):
+            bbox_pred = conv2d(bbox_pred, 4, 1, None)
 
-    with tf.variable_scope('landmarks'):
-        landmark_pred = conv2d(landmark_pred, 10, 1, None)
+        with tf.variable_scope('landmarks'):
+            landmark_pred = conv2d(landmark_pred, 10, 1, None)
 
-    if training:
-        # classification: batch*2
-        cls_prob = tf.squeeze(cls_pred, [1, 2], name='cls_prob')
-        cls_loss = cls_ohem(cls_prob, label)
-        accuracy = cal_accuracy(cls_prob, label)
+        if training:
+            # classification: batch*2
+            cls_prob = tf.squeeze(cls_pred, [1, 2], name='cls_prob')
+            cls_loss = cls_ohem(cls_prob, label)
+            accuracy = cal_accuracy(cls_prob, label)
 
-        # bounding box: batch
-        bbox_pred = tf.squeeze(bbox_pred, [1, 2], name='bbox_pred')
-        bbox_loss = bbox_ohem(bbox_pred, bbox_target, label)
+            # bounding box: batch
+            bbox_pred = tf.squeeze(bbox_pred, [1, 2], name='bbox_pred')
+            bbox_loss = bbox_ohem(bbox_pred, bbox_target, label)
 
-        # landmarks: batch*10
-        landmark_pred = tf.squeeze(landmark_pred, [1, 2], name="landmark_pred")
-        landmark_loss = landmark_ohem(landmark_pred, landmark_target, label)
+            # landmarks: batch*10
+            landmark_pred = tf.squeeze(landmark_pred, [1, 2], name="landmark_pred")
+            landmark_loss = landmark_ohem(landmark_pred, landmark_target, label)
 
-        # regularization
-        L2_loss = tf.add_n(tf.losses.get_regularization_losses())
+            # regularization
+            L2_loss = tf.add_n(tf.losses.get_regularization_losses())
 
-        return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
+            return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
 
-    else: # test
-        # when test: batch_size = 1
-        cls_prob_test = tf.squeeze(cls_pred, axis=0)
-        bbox_pred_test = tf.squeeze(bbox_pred, axis=0)
-        landmark_pred_test = tf.squeeze(landmark_pred, axis=0)
+        else: # test
+            # when test: batch_size = 1
+            cls_prob_test = tf.squeeze(cls_pred, axis=0)
+            bbox_pred_test = tf.squeeze(bbox_pred, axis=0)
+            landmark_pred_test = tf.squeeze(landmark_pred, axis=0)
 
-        return cls_prob_test, bbox_pred_test, landmark_pred_test
+            return cls_prob_test, bbox_pred_test, landmark_pred_test
 
 
 def R_Net(
-        inputs,
+        input,
         label=None,
         bbox_target=None,
         landmark_target=None,
         training=True):
 
-    with slim.arg_scope([slim.conv2d],
-                        activation_fn=prelu,
+
+    def conv2d(x, nf, fs, act_fn=prelu):
+        y = x
+        y = slim.conv2d(y, nf, [fs, fs], 1, 'VALID', activation_fn=act_fn,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005),
-                        padding='valid'):
-        net = slim.conv2d(inputs, 28, [3, 3], 1, scope="conv1")
-        net = slim.max_pool2d(net, [3, 3], 2, 'SAME', scope="pool1")
-        net = slim.conv2d(net, 48, [3, 3], 1, scope="conv2")
-        net = slim.max_pool2d(net, [3, 3], 2, scope="pool2")
-        net = slim.conv2d(net, 64, [2, 2], 1, scope="conv3")
+                        weights_regularizer=slim.l2_regularizer(0.0005))
+        return y
 
-        fc_flatten = slim.flatten(net)
-        fc1 = slim.fully_connected(fc_flatten, 128, prelu, scope="fc1")
+    def maxpool(x, fs, stride, pad='VALID'):
+        y = slim.max_pool2d(x, [fs, fs], stride, pad)
+        return y
 
-        # batch*2
-        cls_prob = slim.fully_connected(fc1, 2, tf.nn.softmax, scope="cls_fc")
+    def block0(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 28, 3)
+            y = maxpool(y, 3, 2, 'SAME')
+        return y
 
-        # batch*4
-        bbox_pred = slim.fully_connected(fc1, 4, None, scope="bbox_fc")
+    def block1(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 48, 3)
+            y = maxpool(y, 3, 2)
+        return y
 
-        # batch*10
-        landmark_pred = slim.fully_connected(fc1, 10, None, scope="landmark_fc")
+    def block2(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 64, 2)
+            y = conv2d(y, 128, 3)
+        return y
+
+    with tf.variable_scope('RNet'):
+        # start
+        ipdb.set_trace()
+        outputs = [input] * 3
+
+        # block 0
+        outputs = [block0(y, 'task_{}_block_0'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_0')
+
+        # block 1
+        outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
+
+        # block 2
+        outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
+
+        # output
+        cls_pred, bbox_pred, landmark_pred = outputs
+
+        with tf.variable_scope('classification'):
+            cls_pred = slim.flatten(cls_pred)
+            cls_pred = slim.fully_connected(cls_pred, 2, tf.nn.softmax)
+
+        with tf.variable_scope('bounding_box'):
+            bbox_pred = slim.flatten(bbox_pred)
+            bbox_pred = slim.fully_connected(bbox_pred, 4, None)
+
+        with tf.variable_scope('landmarks'):
+            landmark_pred = slim.flatten(landmark_pred)
+            landmark_pred = slim.fully_connected(landmark_pred, 10, None)
 
         # train
         if training:
-            cls_loss = cls_ohem(cls_prob, label)
+            cls_loss = cls_ohem(cls_pred, label)
             bbox_loss = bbox_ohem(bbox_pred, bbox_target, label)
-            accuracy = cal_accuracy(cls_prob, label)
+            accuracy = cal_accuracy(cls_pred, label)
             landmark_loss = landmark_ohem(
                 landmark_pred, landmark_target, label)
             L2_loss = tf.add_n(tf.losses.get_regularization_losses())
             return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
         else: # test
-            return cls_prob, bbox_pred, landmark_pred
+            return cls_pred, bbox_pred, landmark_pred
 
 
 def O_Net(
-        inputs,
+        input,
         label=None,
         bbox_target=None,
         landmark_target=None,
         training=True):
 
-    with slim.arg_scope([slim.conv2d],
-                        activation_fn=prelu,
+
+    def conv2d(x, nf, fs, act_fn=prelu):
+        y = x
+        y = slim.conv2d(y, nf, [fs, fs], 1, 'VALID', activation_fn=act_fn,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005),
-                        padding='valid'):
+                        weights_regularizer=slim.l2_regularizer(0.0005))
+        return y
 
-        net = slim.conv2d(inputs, 32, [3, 3], 1, scope="conv1")
-        net = slim.max_pool2d(net, [3, 3], 2, 'SAME', scope="pool1")
-        net = slim.conv2d(net, 64, [3, 3], 1, scope="conv2")
-        net = slim.max_pool2d(net, [3, 3], 2, scope="pool2")
-        net = slim.conv2d(net, 64, [3, 3], 1, scope="conv3")
-        net = slim.max_pool2d(net, [2, 2], 2, 'SAME', scope="pool3")
-        net = slim.conv2d(net, 128, [2, 2], 1, scope="conv4")
+    def maxpool(x, fs, stride, pad='VALID'):
+        y = slim.max_pool2d(x, [fs, fs], stride, pad)
+        return y
 
-        fc_flatten = slim.flatten(net)
-        fc1 = slim.fully_connected(fc_flatten, 256, prelu, scope="fc1")
+    def block0(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 32, 3)
+            y = maxpool(y, 3, 2, 'SAME')
+        return y
 
-        # batch*2
-        cls_prob = slim.fully_connected(fc1, 2, tf.nn.softmax, scope="cls_fc")
+    def block1(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 64, 3)
+            y = maxpool(y, 3, 2)
+        return y
 
-        # batch*4
-        bbox_pred = slim.fully_connected(fc1, 4, None, scope="bbox_fc")
+    def block2(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 64, 3)
+            y = maxpool(y, 2, 2, 'SAME')
+        return y
 
-        # batch*10
-        landmark_pred = slim.fully_connected(fc1, 10, None, scope="landmark_fc")
+    def block3(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, 128, 2)
+            y = conv2d(y, 256, 3)
+        return y
+
+
+    with tf.variable_scope('ONet'):
+        # start
+        outputs = [input] * 3
+
+        # block 0
+        outputs = [block0(y, 'task_{}_block_0'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_0')
+
+        # block 1
+        outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
+
+        # block 2
+        outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
+
+        # block 3
+        outputs = [block3(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
+        nf = outputs[0].get_shape().as_list()[-1]
+        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
+
+        # output
+        cls_pred, bbox_pred, landmark_pred = outputs
+
+        with tf.variable_scope('classification'):
+            cls_pred = slim.flatten(cls_pred)
+            cls_pred = slim.fully_connected(cls_pred, 2, tf.nn.softmax)
+
+        with tf.variable_scope('bounding_box'):
+            bbox_pred = slim.flatten(bbox_pred)
+            bbox_pred = slim.fully_connected(bbox_pred, 4, None)
+
+        with tf.variable_scope('landmarks'):
+            landmark_pred = slim.flatten(landmark_pred)
+            landmark_pred = slim.fully_connected(landmark_pred, 10, None)
 
         # train
         if training:
-            cls_loss = cls_ohem(cls_prob, label)
+            cls_loss = cls_ohem(cls_pred, label)
             bbox_loss = bbox_ohem(bbox_pred, bbox_target, label)
-            accuracy = cal_accuracy(cls_prob, label)
+            accuracy = cal_accuracy(cls_pred, label)
             landmark_loss = landmark_ohem(
                 landmark_pred, landmark_target, label)
             L2_loss = tf.add_n(tf.losses.get_regularization_losses())
             return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy
         else: # test
-            return cls_prob, bbox_pred, landmark_pred
+            return cls_pred, bbox_pred, landmark_pred
