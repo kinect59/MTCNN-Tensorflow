@@ -7,7 +7,8 @@ import argparse
 import os
 import cPickle as pickle
 import cv2
-from train_models.mtcnn_model import P_Net, R_Net
+
+import train_models
 from loader import TestLoader
 from Detection.detector import Detector
 from Detection.fcn_detector import FcnDetector
@@ -173,38 +174,30 @@ def save_hard_example(net, data, save_path):
     pos_file.close()
 
 
-def t_net(prefix, epoch, data_dir,
-          batch_size, test_mode="PNet",
-          thresh=[0.6, 0.6, 0.7], min_face_size=25,
+def t_net(prefix, epoch, data_dir, batch_size,
+          PNet_factory, RNet_factory,
+          test_mode="PNet", thresh=[0.6, 0.6, 0.7], min_face_size=25,
           stride=2, slide_window=False, shuffle=False, vis=False):
+
+    # load detectors
     detectors = [None, None, None]
-    print("Test model: ", test_mode)
-    # PNet-echo
     model_path = ['%s-%s' % (x, y) for x, y in zip(prefix, epoch)]
-    print(model_path[0])
+
     # load pnet model
     if slide_window:
-        PNet = Detector(P_Net, 12, batch_size[0], model_path[0])
+        PNet = Detector(PNet_factory, 12, batch_size[0], model_path[0])
     else:
-        PNet = FcnDetector(P_Net, model_path[0])
+        PNet = FcnDetector(PNet_factory, model_path[0])
     detectors[0] = PNet
 
     # load rnet model
-    if test_mode in ["RNet", "ONet"]:
-        print("==================================", test_mode)
-        RNet = Detector(R_Net, 24, batch_size[1], model_path[1])
+    if test_mode == "RNet":
+        RNet = Detector(RNet_factory, 24, batch_size[1], model_path[1])
         detectors[1] = RNet
 
-    # load onet model
-    if test_mode == "ONet":
-        print("==================================", test_mode)
-        ONet = Detector(O_Net, 48, batch_size[2], model_path[2])
-        detectors[2] = ONet
-
+    # Get detections
     basedir = '.'
-    # anno_file
     filename = './wider_face_train_bbx_gt.txt'
-    # read annatation(type:dict)
     data = read_annotation(basedir, filename)
     mtcnn_detector = MtcnnDetector(
         detectors=detectors,
@@ -212,30 +205,22 @@ def t_net(prefix, epoch, data_dir,
         stride=stride,
         threshold=thresh,
         slide_window=slide_window)
-    print("==================================")
-    # 注意是在“test”模式下
-    # imdb = IMDB("wider", image_set, root_path, dataset_path, 'test')
-    # gt_imdb = imdb.gt_imdb()
     test_data = TestLoader(data['images'])
-    # list
     print("Getting detections for {} images.".format(test_data.size))
     detections, _ = mtcnn_detector.detect_face(test_data)
 
-    save_net = 'RNet'
+    # Save detections
     if test_mode == "PNet":
         save_net = "RNet"
     elif test_mode == "RNet":
         save_net = "ONet"
-    # save detect result
     save_path = os.path.join(data_dir, save_net)
-    print save_path
     if not os.path.exists(save_path):
         os.mkdir(save_path)
-
     save_file = os.path.join(save_path, "detections.pkl")
     with open(save_file, 'wb') as f:
         pickle.dump(detections, f, 1)
-    print("%s测试完成开始OHEM" % image_size)
+
     save_hard_example(image_size, data, save_path)
 
 
@@ -246,9 +231,14 @@ def parse_args():
     parser.add_argument(
         '--test_mode',
         dest='test_mode',
-        help='test net type, can be pnet rnet',
+        help='test net type, can be PNet or RNet',
         default='RNet',
         type=str)
+    parser.add_argument(
+        '--collaborative',
+        dest='collaborative',
+        help='Use collaborative MTL',
+        action='store_true')
     parser.add_argument(
         '--prefix',
         dest='prefix',
@@ -257,7 +247,7 @@ def parse_args():
         default=[
             '../data/MTCNN_model/PNet_landmark/PNet',
             '../data/MTCNN_model/RNet_landmark/RNet',
-            '../data/MTCNN_model/ONet/ONet'],
+            '../data/MTCNN_model/ONet_landmark/ONet'],
         type=str)
     parser.add_argument(
         '--epoch',
@@ -306,14 +296,11 @@ def parse_args():
         dest='slide_window',
         help='use sliding window in pnet',
         action='store_true')
-    # parser.add_argument('--gpu', dest='gpu_id', help='GPU device to train with',
-    #                     default=0, type=int)
     parser.add_argument(
         '--shuffle',
         dest='shuffle',
         help='shuffle data on visualization',
         action='store_true')
-    # parser.add_argument('--vis', dest='vis', help='turn on visualization', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -321,8 +308,18 @@ def parse_args():
 if __name__ == '__main__':
 
     args = parse_args()
-    print 'Called with argument:'
-    print args
+    print(args)
+
+    model_prefix = args.prefix
+
+    if args.collaborative:
+        print("Using collaborative MTL.")
+        model_prefix = [s.replace('MTCNN_model', 'MTCNN_collaborative_model') for s in model_prefix]
+        PNet_factory = train_models.mtcnn_collaborative_model.P_Net
+        RNet_factory = train_models.mtcnn_collaborative_model.R_Net
+    else:
+        PNet_factory = train_models.mtcnn_model.P_Net
+        RNet_factory = train_models.mtcnn_model.R_Net
 
     if args.test_mode == "PNet":
         image_size = 24
@@ -343,10 +340,12 @@ if __name__ == '__main__':
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-    t_net(args.prefix,  # model param's file
+    t_net(model_prefix,  # model param's file
           args.epoch,  # final epoches
           data_dir,
           args.batch_size,  # test batch_size
+          PNet_factory,
+          RNet_factory,
           args.test_mode,  # test which model
           args.thresh,  # cls threshold
           args.min_face,  # min_face
