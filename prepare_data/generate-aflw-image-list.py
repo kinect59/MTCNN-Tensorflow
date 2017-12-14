@@ -136,8 +136,8 @@ def process_aflw_raw(sqlite_file, image_dir):
     return dataset
 
 if __name__ == '__main__':
-    sqlite_file = 'data/aflw.sqlite'
-    image_dir = 'data/flickr'
+    sqlite_file = 'aflw_image_folder/aflw.sqlite'
+    image_dir = 'aflw_image_folder/flickr'
 
     aflw_df = process_aflw_raw(sqlite_file, image_dir)
     aflw_df.to_csv('aflw_image_list.txt', index=False)
