@@ -18,7 +18,7 @@ from BBox_utils import (
     BBox,
     IoU
 )
-from Landmark_utils import show_landmark, rotate, flip
+from Landmark_utils import rotate, flip
 
 
 def read_celeba_train_list(filepath, img_folder):
