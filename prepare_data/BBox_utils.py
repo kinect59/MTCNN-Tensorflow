@@ -3,6 +3,8 @@ import os
 import time
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as plp
 
 
 def logger(msg):
@@ -25,14 +27,6 @@ def shuffle_in_unison_scary(a, b):
     np.random.shuffle(a)
     np.random.set_state(rng_state)
     np.random.shuffle(b)
-
-
-def drawLandmark(img, bbox, landmark):
-    cv2.rectangle(img, (bbox.left, bbox.top),
-                  (bbox.right, bbox.bottom), (0, 0, 255), 2)
-    for x, y in landmark:
-        cv2.circle(img, (int(x), int(y)), 2, (0, 255, 0), -1)
-    return img
 
 
 def getDataFromTxt(txt, with_landmark=True):
@@ -90,21 +84,6 @@ def getPatch(img, bbox, point, padding):
     patch = img[patch_top: patch_bottom + 1, patch_left: patch_right + 1]
     patch_bbox = BBox([patch_left, patch_right, patch_top, patch_bottom])
     return patch, patch_bbox
-
-
-'''
-def processImageOriginal(imgs):
-    """
-        process images before feeding to CNNs
-        imgs: N x 1 x W x H
-    """
-    imgs = imgs.astype(np.float32)
-    for i, img in enumerate(imgs):
-        m = img.mean()
-        s = img.std()
-        imgs[i] = (img - m) / s
-    return imgs
-'''
 
 
 def processImage(imgs):
@@ -247,3 +226,19 @@ def IoU(box, boxes):
     inter = w * h * 1.0
     ovr = inter / (box_area + area - inter)
     return ovr
+
+
+def show_bbox(bbox, color='yellow'):
+    """ Show bounding box:
+        bbox = [x, y, width, height, score]
+    """
+    ax = plt.gca()
+    if len(bbox) == 5:
+        plt.text(bbox[0], bbox[1] - 6, "{:0.2f}".format(bbox[4]),
+                 fontsize=16, color='magenta')
+    rect = plp.Rectangle(
+        (bbox[0], bbox[1]),
+        bbox[2],
+        bbox[3],
+        fill=False, color=color, linewidth=4)
+    ax.add_patch(rect)

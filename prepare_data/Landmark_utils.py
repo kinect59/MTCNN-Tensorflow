@@ -2,23 +2,47 @@
 """
     functions
 """
-
+import ipdb
 import os
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-def show_landmark(face, landmark):
+def show_landmarks(landmarks):
+    """ Show landmarks.
+        landmarks = array([x1, y1, x2, y2, x3, y3, ...])
     """
-        view face with landmark for visualization
+    landmarks = landmarks.reshape(-1, 2)
+    plt.scatter(landmarks[:, 0], landmarks[:, 1], 6, 'cyan')
+
+
+def lfs(landmarks_pred, landmarks_gt):
+    """ Landmarks failure score between
+        predicted landmarks
+            `landmarks_pred`: array([x1, y1, x2, y2, x3, y3, ...]) (N, K)
+        and
+        ground truth landmarks
+            `landmarks_gt`: array(...) (, K)
     """
-    face_copied = face.copy().astype(np.uint8)
-    for (x, y) in landmark:
-        xx = int(face.shape[0] * x)
-        yy = int(face.shape[1] * y)
-        cv2.circle(face_copied, (xx, yy), 2, (0, 0, 0), -1)
-    cv2.imshow("face_rot", face_copied)
-    cv2.waitKey(0)
+    mean_dists = np.zeros(landmarks_pred.shape[0])
+    ratios = np.zeros(landmarks_pred.shape[0])
+
+    landmarks_gt = landmarks_gt.reshape(-1, 2)
+    #area = landmarks_gt.max(0) - landmarks_gt.min(0)
+    #area = np.prod(area) / 2
+    area = np.sqrt(np.sum((landmarks_gt[0, :] - landmarks_gt[1, :])**2))
+
+    for i, lpred in enumerate(landmarks_pred):
+        lpred = lpred.reshape(-1, 2)
+        dists = np.sqrt(np.sum((lpred - landmarks_gt)**2, 1))
+        mean_dist = np.nanmean(dists)
+        mean_dists[i] = mean_dist
+
+        ratio = mean_dist / area
+        ratios[i] = ratio
+
+    return mean_dists, ratios
 
 
 #rotate(img, f_bbox,bbox.reprojectLandmark(landmarkGt), 5)
