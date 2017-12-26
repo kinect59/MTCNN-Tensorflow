@@ -1,5 +1,4 @@
 # coding:utf-8
-import ipdb
 import tensorflow as tf
 from tensorflow.contrib import slim
 import numpy as np
@@ -159,7 +158,7 @@ def collaborative_block(inputs, nf, training, scope):
         y = slim.conv2d(x, nf, [fs, fs], 1, 'SAME', activation_fn=None,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=None,
-                        weights_regularizer=slim.l2_regularizer(0.0005))
+                        weights_regularizer=slim.l2_regularizer(0.0001))
         return y
 
     def bn(x, training):
@@ -169,28 +168,24 @@ def collaborative_block(inputs, nf, training, scope):
     def aggregation(x, n_out, training):
         with tf.variable_scope('aggregation'):
             z = x
-            if z.get_shape()[1].value == 1:
-                fs = 1
-            else:
-                fs = 3
 
             if version == 1:
                 z = conv2d(z, n_out, 1)
                 z = bn(z, training)
                 z = tf.nn.relu(z)
-                z = conv2d(z, n_out, fs)
+                z = conv2d(z, n_out, 3)
                 z = bn(z, training)
             elif version == 2:
                 z = conv2d(z, n_out, 1)
                 z = bn(z, training)
                 z = tf.nn.relu(z)
-                z = conv2d(z, n_out, fs)
+                z = conv2d(z, n_out, 3)
                 z = bn(z, training)
             elif version == 3:
                 z = conv2d(z, n_out, 1)
                 z = bn(z, training)
                 z = tf.nn.relu(z)
-                z = conv2d(z, n_out, fs)
+                z = conv2d(z, n_out, 3)
                 z = bn(z, training)
                 z = tf.nn.relu(z)
             else:
@@ -245,12 +240,15 @@ def P_Net(
         landmark_target=None,
         training=True):
 
+    #divisor = 2.00
+    divisor = 1.00
+
     def conv2d(x, nf, fs, act_fn=prelu):
         y = x
         y = slim.conv2d(y, nf, [fs, fs], 1, 'VALID', activation_fn=act_fn,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005))
+                        weights_regularizer=slim.l2_regularizer(0.0001))
         return y
 
     def maxpool(x, fs, stride, pad='VALID'):
@@ -260,15 +258,20 @@ def P_Net(
     def block0(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 10, 3)
+            y = conv2d(y, int(10 / divisor), 3)
             y = maxpool(y, 2, 2, 'SAME')
         return y
 
     def block1(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 16, 3)
-            y = conv2d(y, 32, 3)
+            y = conv2d(y, int(16 / divisor), 3)
+        return y
+
+    def block2(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, int(32 / divisor), 3)
         return y
 
     with tf.variable_scope('PNet'):
@@ -284,6 +287,9 @@ def P_Net(
         outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
         nf = outputs[0].get_shape().as_list()[-1]
         outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
+
+        # block 2
+        outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
 
         # output
         cls_pred, bbox_pred, landmark_pred = outputs
@@ -333,13 +339,15 @@ def R_Net(
         landmark_target=None,
         training=True):
 
+    #divisor = 2.3
+    divisor = 1.0
 
     def conv2d(x, nf, fs, act_fn=prelu):
         y = x
         y = slim.conv2d(y, nf, [fs, fs], 1, 'VALID', activation_fn=act_fn,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005))
+                        weights_regularizer=slim.l2_regularizer(0.0001))
         return y
 
     def maxpool(x, fs, stride, pad='VALID'):
@@ -349,27 +357,32 @@ def R_Net(
     def block0(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 28, 3)
+            y = conv2d(y, int(28.0 / divisor), 3)
             y = maxpool(y, 3, 2, 'SAME')
         return y
 
     def block1(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 48, 3)
+            y = conv2d(y, int(48.0 / divisor), 3)
             y = maxpool(y, 3, 2)
         return y
 
     def block2(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 64, 2)
-            y = conv2d(y, 128, 3)
+            y = conv2d(y, int(64.0 / divisor), 2)
+        return y
+
+    def block3(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = slim.flatten(y)
+            y = slim.fully_connected(y, int(128.0 / divisor), activation_fn=prelu)
         return y
 
     with tf.variable_scope('RNet'):
         # start
-        ipdb.set_trace()
         outputs = [input] * 3
 
         # block 0
@@ -387,19 +400,21 @@ def R_Net(
         nf = outputs[0].get_shape().as_list()[-1]
         outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
 
+        # block 3
+        outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
+        #nf = outputs[0].get_shape().as_list()[-1]
+        #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
+
         # output
         cls_pred, bbox_pred, landmark_pred = outputs
 
         with tf.variable_scope('classification'):
-            cls_pred = slim.flatten(cls_pred)
             cls_pred = slim.fully_connected(cls_pred, 2, tf.nn.softmax)
 
         with tf.variable_scope('bounding_box'):
-            bbox_pred = slim.flatten(bbox_pred)
             bbox_pred = slim.fully_connected(bbox_pred, 4, None)
 
         with tf.variable_scope('landmarks'):
-            landmark_pred = slim.flatten(landmark_pred)
             landmark_pred = slim.fully_connected(landmark_pred, 10, None)
 
         # train
@@ -422,13 +437,15 @@ def O_Net(
         landmark_target=None,
         training=True):
 
+    #divisor = 2.32
+    divisor = 1.00
 
     def conv2d(x, nf, fs, act_fn=prelu):
         y = x
         y = slim.conv2d(y, nf, [fs, fs], 1, 'VALID', activation_fn=act_fn,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005))
+                        weights_regularizer=slim.l2_regularizer(0.0001))
         return y
 
     def maxpool(x, fs, stride, pad='VALID'):
@@ -438,29 +455,44 @@ def O_Net(
     def block0(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 32, 3)
+            y = conv2d(y, int(32 / divisor), 3)
             y = maxpool(y, 3, 2, 'SAME')
         return y
 
     def block1(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 64, 3)
+            y = conv2d(y, int(64 / divisor), 3)
             y = maxpool(y, 3, 2)
         return y
 
     def block2(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 64, 3)
+            y = conv2d(y, int(64 / divisor), 3)
             y = maxpool(y, 2, 2, 'SAME')
         return y
 
     def block3(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, 128, 2)
-            y = conv2d(y, 256, 3)
+            #y = conv2d(y, int(128 / divisor), 2)
+        return y
+
+    def block4(x, scope):
+        with tf.variable_scope(scope):
+            y = x
+            y = conv2d(y, int(128 / divisor), 2)
+            y = slim.flatten(y)
+            y = slim.fully_connected(y, int(256 / divisor), activation_fn=prelu)
+        return y
+
+    def fc(x, nf, act):
+        y = slim.fully_connected(x, 2, act,
+            weights_initializer=tf.contrib.layers.variance_scaling_initializer(
+                2.0, 'FAN_IN', True),
+            biases_initializer=tf.zeros_initializer(),
+            weights_regularizer=slim.l2_regularizer(0.0001))
         return y
 
 
@@ -484,23 +516,23 @@ def O_Net(
         outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
 
         # block 3
-        outputs = [block3(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
-        nf = outputs[0].get_shape().as_list()[-1]
-        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
+        #outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
+        #nf = outputs[0].get_shape().as_list()[-1]
+        #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
+
+        # block 4
+        outputs = [block4(y, 'task_{}_block_4'.format(i)) for i, y in enumerate(outputs)]
 
         # output
         cls_pred, bbox_pred, landmark_pred = outputs
 
         with tf.variable_scope('classification'):
-            cls_pred = slim.flatten(cls_pred)
             cls_pred = slim.fully_connected(cls_pred, 2, tf.nn.softmax)
 
         with tf.variable_scope('bounding_box'):
-            bbox_pred = slim.flatten(bbox_pred)
             bbox_pred = slim.fully_connected(bbox_pred, 4, None)
 
         with tf.variable_scope('landmarks'):
-            landmark_pred = slim.flatten(landmark_pred)
             landmark_pred = slim.fully_connected(landmark_pred, 10, None)
 
         # train

@@ -18,20 +18,25 @@ if __name__ == '__main__':
         RNet_factory = mtcnn_collaborative_model.R_Net
         ONet_factory = mtcnn_collaborative_model.O_Net
         experiment_folder = '../data/MTCNN_collaborative_model/{}_landmark'.format(net)
+        #experiment_folder = 'tmp/MTCNN_collaborative_model/{}_landmark'.format(net)
     else:
         PNet_factory = mtcnn_model.P_Net
         RNet_factory = mtcnn_model.R_Net
         ONet_factory = mtcnn_model.O_Net
         experiment_folder = '../data/MTCNN_model/{}_landmark'.format(net)
+        #experiment_folder = 'tmp/MTCNN_model/{}_landmark'.format(net)
 
     if net == 'PNet':
-        end_epoch = 30
+        #end_epoch = 30
+        end_epoch = 70
         net_factory = PNet_factory
     elif net == 'RNet':
-        end_epoch = 22
+        #end_epoch = 22
+        end_epoch = 70
         net_factory = RNet_factory
     elif net == 'ONet':
-        end_epoch = 22
+        #end_epoch = 22
+        end_epoch = 70
         net_factory = ONet_factory
     else:
         raise Exception("Invalid argument: {}".format(net))
