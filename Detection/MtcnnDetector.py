@@ -417,11 +417,13 @@ class MtcnnDetector(object):
         landmarks = []
         batch_idx = 0
         sum_time = 0
+        n_faces = test_data.size
+        print("Detecting {} faces".format(n_faces))
         #test_data is iter_
         for databatch in test_data:
             # databatch(image returned)
             if batch_idx % 100 == 0:
-                print("%d images done" % batch_idx)
+                print("{} secs: {} images done".format(sum_time, batch_idx))
             im = databatch
             # pnet
             t1 = 0
