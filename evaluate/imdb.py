@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import os
 import numpy as np
 
@@ -43,9 +43,11 @@ class IMDB(object):
         image_set_index: str
             relative path of image
         """
-        image_set_index_file = os.path.join(self.data_path, 'imglists', self.image_set + '.txt')
+        image_set_index_file = os.path.join(
+            self.data_path, 'imglists', self.image_set + '.txt')
         print("image_set_index_file", image_set_index_file)
-        assert os.path.exists(image_set_index_file), 'Path does not exist: {}'.format(image_set_index_file)
+        assert os.path.exists(image_set_index_file), 'Path does not exist: {}'.format(
+            image_set_index_file)
         with open(image_set_index_file, 'r') as f:
             image_set_index = [x.strip().split(' ')[0] for x in f.readlines()]
         return image_set_index
@@ -89,7 +91,8 @@ class IMDB(object):
             image_file = index
         if not image_file.endswith('.jpg'):
             image_file = image_file + '.jpg'
-        assert os.path.exists(image_file), 'Path does not exist: {}'.format(image_file)
+        assert os.path.exists(
+            image_file), 'Path does not exist: {}'.format(image_file)
         return image_file
 
     def load_annotations(self):
@@ -102,9 +105,16 @@ class IMDB(object):
         imdb: dict
             image database with annotations
         """
-        annotation_file = os.path.join(self.data_path, 'imglists', self.image_set + '.txt')
-        print(os.path.join(self.data_path, 'imglists', self.image_set + '.txt'))
-        assert os.path.exists(annotation_file), 'annotations not found at {}'.format(annotation_file)
+        annotation_file = os.path.join(
+            self.data_path, 'imglists', self.image_set + '.txt')
+        print(
+            os.path.join(
+                self.data_path,
+                'imglists',
+                self.image_set +
+                '.txt'))
+        assert os.path.exists(
+            annotation_file), 'annotations not found at {}'.format(annotation_file)
         print("开始读取annotation文件", annotation_file)
         with open(annotation_file, 'r') as f:
             annotations = f.readlines()
