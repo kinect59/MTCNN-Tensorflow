@@ -266,12 +266,13 @@ def P_Net(
         with tf.variable_scope(scope):
             y = x
             y = conv2d(y, int(16 / divisor), 3)
+            y = conv2d(y, int(32 / divisor), 3)
         return y
 
     def block2(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, int(32 / divisor), 3)
+            #y = conv2d(y, int(32 / divisor), 3)
         return y
 
     with tf.variable_scope('PNet'):
@@ -285,11 +286,11 @@ def P_Net(
 
         # block 1
         outputs = [block1(y, 'task_{}_block_1'.format(i)) for i, y in enumerate(outputs)]
-        nf = outputs[0].get_shape().as_list()[-1]
-        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
+        #nf = outputs[0].get_shape().as_list()[-1]
+        #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_1')
 
-        # block 2
-        outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
+        ## block 2
+        #outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
 
         # output
         cls_pred, bbox_pred, landmark_pred = outputs
@@ -372,13 +373,15 @@ def R_Net(
         with tf.variable_scope(scope):
             y = x
             y = conv2d(y, int(64.0 / divisor), 2)
+            y = slim.flatten(y)
+            y = slim.fully_connected(y, int(128.0 / divisor), activation_fn=prelu)
         return y
 
     def block3(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = slim.flatten(y)
-            y = slim.fully_connected(y, int(128.0 / divisor), activation_fn=prelu)
+            #y = slim.flatten(y)
+            #y = slim.fully_connected(y, int(128.0 / divisor), activation_fn=prelu)
         return y
 
     with tf.variable_scope('RNet'):
@@ -397,13 +400,13 @@ def R_Net(
 
         # block 2
         outputs = [block2(y, 'task_{}_block_2'.format(i)) for i, y in enumerate(outputs)]
-        nf = outputs[0].get_shape().as_list()[-1]
-        outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
-
-        # block 3
-        outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
         #nf = outputs[0].get_shape().as_list()[-1]
-        #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
+        #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
+
+        ## block 3
+        #outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
+        ##nf = outputs[0].get_shape().as_list()[-1]
+        ##outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
 
         # output
         cls_pred, bbox_pred, landmark_pred = outputs
@@ -476,15 +479,16 @@ def O_Net(
     def block3(x, scope):
         with tf.variable_scope(scope):
             y = x
-            #y = conv2d(y, int(128 / divisor), 2)
+            y = conv2d(y, int(128 / divisor), 2)
+            y = slim.flatten(y)
+            y = slim.fully_connected(y, int(256 / divisor), activation_fn=prelu)
         return y
 
     def block4(x, scope):
         with tf.variable_scope(scope):
             y = x
-            y = conv2d(y, int(128 / divisor), 2)
-            y = slim.flatten(y)
-            y = slim.fully_connected(y, int(256 / divisor), activation_fn=prelu)
+            #y = slim.flatten(y)
+            #y = slim.fully_connected(y, int(256 / divisor), activation_fn=prelu)
         return y
 
     def fc(x, nf, act):
@@ -516,12 +520,12 @@ def O_Net(
         outputs = collaborative_block(outputs, nf, training, 'collaborative_block_2')
 
         # block 3
-        #outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
+        outputs = [block3(y, 'task_{}_block_3'.format(i)) for i, y in enumerate(outputs)]
         #nf = outputs[0].get_shape().as_list()[-1]
         #outputs = collaborative_block(outputs, nf, training, 'collaborative_block_3')
 
-        # block 4
-        outputs = [block4(y, 'task_{}_block_4'.format(i)) for i, y in enumerate(outputs)]
+        ## block 4
+        #outputs = [block4(y, 'task_{}_block_4'.format(i)) for i, y in enumerate(outputs)]
 
         # output
         cls_pred, bbox_pred, landmark_pred = outputs

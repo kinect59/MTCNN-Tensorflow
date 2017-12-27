@@ -161,15 +161,19 @@ def P_Net(
         bbox_target=None,
         landmark_target=None,
         training=True):
+
+    mult = 1.94
+    # mult = 1
+
     # define common param
     with slim.arg_scope([slim.conv2d],
                         activation_fn=prelu,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005),
+                        weights_regularizer=slim.l2_regularizer(0.0001),
                         padding='valid'):
         print inputs.get_shape()
-        net = slim.conv2d(inputs, 10, 3, stride=1, scope='conv1')
+        net = slim.conv2d(inputs, int(10 * mult), 3, stride=1, scope='conv1')
         print net.get_shape()
         net = slim.max_pool2d(
             net,
@@ -181,11 +185,11 @@ def P_Net(
             padding='SAME')
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=16, kernel_size=[
+            net, num_outputs=int(16 * mult), kernel_size=[
                 3, 3], stride=1, scope='conv2')
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=32, kernel_size=[
+            net, num_outputs=int(32 * mult), kernel_size=[
                 3, 3], stride=1, scope='conv3')
         print net.get_shape()
         # batch*H*W*2
@@ -251,15 +255,19 @@ def R_Net(
         bbox_target=None,
         landmark_target=None,
         training=True):
+
+    mult = 2.07
+    # mult = 1
+
     with slim.arg_scope([slim.conv2d],
                         activation_fn=prelu,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005),
+                        weights_regularizer=slim.l2_regularizer(0.0001),
                         padding='valid'):
         print inputs.get_shape()
         net = slim.conv2d(
-            inputs, num_outputs=28, kernel_size=[
+            inputs, num_outputs=int(28 * mult), kernel_size=[
                 3, 3], stride=1, scope="conv1")
         print net.get_shape()
         net = slim.max_pool2d(
@@ -272,20 +280,20 @@ def R_Net(
             padding='SAME')
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=48, kernel_size=[
+            net, num_outputs=int(48 * mult), kernel_size=[
                 3, 3], stride=1, scope="conv2")
         print net.get_shape()
         net = slim.max_pool2d(net, kernel_size=[3, 3], stride=2, scope="pool2")
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=64, kernel_size=[
+            net, num_outputs=int(64 * mult), kernel_size=[
                 2, 2], stride=1, scope="conv3")
         print net.get_shape()
         fc_flatten = slim.flatten(net)
         print fc_flatten.get_shape()
         fc1 = slim.fully_connected(
             fc_flatten,
-            num_outputs=128,
+            num_outputs=int(128 * mult),
             scope="fc1",
             activation_fn=prelu)
         print fc1.get_shape()
@@ -323,15 +331,19 @@ def O_Net(
         bbox_target=None,
         landmark_target=None,
         training=True):
+
+    mult = 1.99
+    # mult = 1
+
     with slim.arg_scope([slim.conv2d],
                         activation_fn=prelu,
                         weights_initializer=slim.xavier_initializer(),
                         biases_initializer=tf.zeros_initializer(),
-                        weights_regularizer=slim.l2_regularizer(0.0005),
+                        weights_regularizer=slim.l2_regularizer(0.0001),
                         padding='valid'):
         print inputs.get_shape()
         net = slim.conv2d(
-            inputs, num_outputs=32, kernel_size=[
+            inputs, num_outputs=int(32 * mult), kernel_size=[
                 3, 3], stride=1, scope="conv1")
         print net.get_shape()
         net = slim.max_pool2d(
@@ -344,13 +356,13 @@ def O_Net(
             padding='SAME')
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=64, kernel_size=[
+            net, num_outputs=int(64 * mult), kernel_size=[
                 3, 3], stride=1, scope="conv2")
         print net.get_shape()
         net = slim.max_pool2d(net, kernel_size=[3, 3], stride=2, scope="pool2")
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=64, kernel_size=[
+            net, num_outputs=int(64 * mult), kernel_size=[
                 3, 3], stride=1, scope="conv3")
         print net.get_shape()
         net = slim.max_pool2d(
@@ -363,14 +375,14 @@ def O_Net(
             padding='SAME')
         print net.get_shape()
         net = slim.conv2d(
-            net, num_outputs=128, kernel_size=[
+            net, num_outputs=int(128 * mult), kernel_size=[
                 2, 2], stride=1, scope="conv4")
         print net.get_shape()
         fc_flatten = slim.flatten(net)
         print fc_flatten.get_shape()
         fc1 = slim.fully_connected(
             fc_flatten,
-            num_outputs=256,
+            num_outputs=int(256 * mult),
             scope="fc1",
             activation_fn=prelu)
         print fc1.get_shape()
