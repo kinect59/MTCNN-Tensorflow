@@ -255,9 +255,9 @@ def parse_args():
         help='epoch number of model to load',
         nargs="+",
         default=[
-            18,
-            14,
-            22],
+            70,
+            70,
+            70],
         type=int)
     parser.add_argument(
         '--batch_size',
